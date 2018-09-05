@@ -11,8 +11,9 @@ import multiprocessing
 import collections
 from tqdm import tqdm
 import PIL.Image, PIL.ImageTk
-from Tkinter import *
-import Tkinter, Tkconstants, tkFileDialog, tkMessageBox
+import tkinter
+import tkinter.messagebox
+import tkinter.filedialog
 
 # Hard-coded DPI for my monitor
 MY_DPI = 94
@@ -45,7 +46,7 @@ class FrameExtractor:
             self.capture.set(cv2.CAP_PROP_POS_FRAMES, int(count * framePeriod))
             success,image = self.capture.read()
             if success == True:
-                print("Frame number {}".format(count * framePeriod))
+                print("Frame number {}".format(int(count * framePeriod)))
                 frameName = "images/" + self.fileName.split(".")[0] + str(count) + ".jpg"
                 cv2.imwrite(frameName, image)     # save frame as JPEG file
                 count += 1
@@ -101,6 +102,7 @@ class Chart:
         for frame in self.RGB_MAP:
             start = 0
             end = 0
+
             for i in range(self.CLUSTER):
                 end = start + frame[i][3] * self.IMAGE_HEIGHT
                 cv2.rectangle(self.CHART, (self.CHART_INDEX * self.FRAME_WIDTH, int(start)), (self.FRAME_WIDTH * (self.CHART_INDEX + 1), int(end)), (frame[i][0],frame[i][1],frame[i][2]), -1)
@@ -139,14 +141,11 @@ class DominantColors:
 
         #save image after operations
         self.IMAGE = img
-
         #using k-means to cluster pixels
-        kmeans = KMeans(n_clusters = self.CLUSTERS)
+        kmeans = KMeans(n_clusters = self.CLUSTERS, max_iter = 10)
         kmeans.fit(img)
-
         #the cluster centers are our dominant colors.
         self.COLORS = kmeans.cluster_centers_
-
         #save labels
         self.LABELS = kmeans.labels_
         colorTable = self.setHistogram()
@@ -168,7 +167,6 @@ class DominantColors:
         colors = list(finalDict.values())
 
         colors = sorted(colors, key=lambda colors: colors[0]+colors[1]+colors[2])
-
         hist = [ hist[i] for i in finalDict.keys()]
 
         #print("frame {}/{}".format(self.CHART_INDEX+1, self.TOTAL_FRAMES))
@@ -192,11 +190,10 @@ class DominantColors:
             #using cv2.rectangle to plot colors
             #cv2.rectangle(self.CHART, (self.CHART_INDEX * self.FRAME_WIDTH, int(start)), (self.FRAME_WIDTH * (self.CHART_INDEX + 1), int(end)), (r,g,b), -1)
             #start = end
-
         return colorTable
 
 # GUI
-class Window(Frame):
+class Window(tkinter.Frame):
     videoFilename = None
     filename = None
     clusters = None
@@ -211,10 +208,10 @@ class Window(Frame):
     defaultImageHeight = None
 
     def __init__(self, master=None):
-        Frame.__init__(self, master)
+        tkinter.Frame.__init__(self, master)
         self.master = master
         self.init_window()
-        self.isVideoSelected = FALSE
+        self.isVideoSelected = False
         self.defaultFrames = 10
         self.defaultClusters = 5
         self.defaultImageWidth = 500
@@ -233,11 +230,11 @@ class Window(Frame):
         root.protocol('WM_DELETE_WINDOW', self.client_exit)
 
         # creating a menu instance
-        menuBar = Menu(self.master)
+        menuBar = tkinter.Menu(self.master)
         self.master.config(menu=menuBar)
 
         # create the file object)
-        file = Menu(menuBar)
+        file = tkinter.Menu(menuBar)
 
         # adds a command to the menu option, calling it exit, and the
         # command it runs on event is client_exit
@@ -250,7 +247,7 @@ class Window(Frame):
         menuBar.add_cascade(label="File", menu=file)
 
         # create the file object)
-        edit = Menu(menuBar)
+        edit = tkinter.Menu(menuBar)
 
         # adds a command to the menu option, calling it exit, and the
         # command it runs on event is client_exit
@@ -265,20 +262,20 @@ class Window(Frame):
         root.grid_columnconfigure(1, weight=1)
 
         # add parameter entry fields
-        Label(self.master, text="Frames").grid(row=0)
-        Label(self.master, text="Clusters").grid(row=1)
-        Label(self.master, text="Image width (px)").grid(row=2)
-        Label(self.master, text="Image height (px)").grid(row=3)
+        tkinter.Label(self.master, text="Frames").grid(row=0)
+        tkinter.Label(self.master, text="Clusters").grid(row=1)
+        tkinter.Label(self.master, text="Image width (px)").grid(row=2)
+        tkinter.Label(self.master, text="Image height (px)").grid(row=3)
 
-        self.frames = StringVar()
-        self.clusters = StringVar()
-        self.imageWidth = StringVar()
-        self.imageHeight = StringVar()
+        self.frames = tkinter.StringVar()
+        self.clusters = tkinter.StringVar()
+        self.imageWidth = tkinter.StringVar()
+        self.imageHeight = tkinter.StringVar()
 
-        frames = Entry(self.master, textvariable=self.frames)
-        clusters = Entry(self.master, textvariable=self.clusters)
-        imageWidth = Entry(self.master, textvariable=self.imageWidth)
-        imageHeight = Entry(self.master, textvariable=self.imageHeight)
+        frames = tkinter.Entry(self.master, textvariable=self.frames)
+        clusters = tkinter.Entry(self.master, textvariable=self.clusters)
+        imageWidth = tkinter.Entry(self.master, textvariable=self.imageWidth)
+        imageHeight = tkinter.Entry(self.master, textvariable=self.imageHeight)
 
         frames.grid(row=0, column=1)
         clusters.grid(row=1, column=1)
@@ -286,7 +283,7 @@ class Window(Frame):
         imageHeight.grid(row=3, column=1)
 
         # creating a button instance and placing it
-        Button(self.master, text="Compute!",command=self.video_computation).grid(row=4, columnspan=2)
+        tkinter.Button(self.master, text="Compute!",command=self.video_computation).grid(row=4, columnspan=2)
 
 
     def showImg(self):
@@ -294,28 +291,28 @@ class Window(Frame):
         render = PIL.ImageTk.PhotoImage(self.load)
 
         # labels can be text or images
-        img = Label(self.master, image=render)
+        img = tkinter.Label(self.master, image=render)
         img.image = render
         img.grid(row=5, columnspan=2)
 
 
     def showText(self):
-        Label(self.master, text="Video path : {}".format(self.videoFilename)).grid(row=5, column=0)
+        tkinter.Label(self.master, text="Video path : {}".format(self.videoFilename)).grid(row=5, column=0)
 
     def client_exit(self):
         root.quit()
         exit()
 
     def open_file(self):
-        videoFilePath = tkFileDialog.askopenfilename(initialdir = "/home/uidq6974/Dev/Python/openCV/imageColor",title = "Select video file",filetypes = (("avi files","*.avi"),("all files","*.*")))
+        videoFilePath = tkinter.filedialog.askopenfilename(initialdir = "/home/uidq6974/Dev/Python/openCV/imageColor",title = "Select video file",filetypes = (("avi files","*.avi"),("all files","*.*")))
         self.videoFilename = os.path.basename(videoFilePath)
-        self.isVideoSelected = TRUE
+        self.isVideoSelected = True
 
     def save_as(self):
 
 
         if(self.load != None):
-            newImage = tkFileDialog.asksaveasfile(filetypes=(("Portable Network Graphics (*.png)", "*.png"),
+            newImage = tkinter.filedialog.asksaveasfile(filetypes=(("Portable Network Graphics (*.png)", "*.png"),
                                         ("All Files (*.*)", "*.*")), mode='wb', defaultextension=".png")
             extension = self.plotName.rsplit('.', 1)[-1]
             if newImage is None: # asksaveasfile return `None` if dialog closed with "cancel".
@@ -324,7 +321,7 @@ class Window(Frame):
             newImage.close()
             print("Image successfully saved to : {}".format(newImage.name))
         else:
-            tkMessageBox.showinfo("Info", "Image {} has not been generated yet!".format(self.plotName))
+            tkinter.messagebox.showinfo("Info", "Image {} has not been generated yet!".format(self.plotName))
             return
 
 
@@ -332,28 +329,28 @@ class Window(Frame):
     def video_computation(self):
         if(self.isVideoSelected):
             if not self.frames.get():
-                tkMessageBox.showinfo("Info", "No frames number set : using default ({})".format(self.defaultFrames))
+                tkinter.messagebox.showinfo("Info", "No frames number set : using default ({})".format(self.defaultFrames))
                 frames = int(self.defaultFrames)
             else :
                 frames = int(self.frames.get())
             if(frames < 2):
-                tkMessageBox.showinfo("Info", "The number of frames must be more than one. \nUsing defaut ({})".format(self.defaultFrames))
+                tkinter.messagebox.showinfo("Info", "The number of frames must be more than one. \nUsing defaut ({})".format(self.defaultFrames))
                 frames = self.defaultFrames
 
             if not self.clusters.get():
-                tkMessageBox.showinfo("Info", "No clusters number set : using default ({})".format(self.defaultClusters))
+                tkinter.messagebox.showinfo("Info", "No clusters number set : using default ({})".format(self.defaultClusters))
                 clusters = int(self.defaultClusters)
             else:
                 clusters = int(self.clusters.get())
 
             if not self.imageWidth.get():
-                tkMessageBox.showinfo("Info", "No image width set : using default ({})".format(self.defaultImageWidth))
+                tkinter.messagebox.showinfo("Info", "No image width set : using default ({})".format(self.defaultImageWidth))
                 width = int(self.defaultImageWidth)
             else:
                 width = int(self.imageWidth.get())
 
             if not self.imageHeight.get():
-                tkMessageBox.showinfo("Info", "No image height set : using default ({})".format(self.defaultImageHeight))
+                tkinter.messagebox.showinfo("Info", "No image height set : using default ({})".format(self.defaultImageHeight))
                 height = int(self.defaultImageHeight)
             else:
                 height = int(self.imageHeight.get())
@@ -368,17 +365,20 @@ class Window(Frame):
 
             if maxFrame > 0:
                 dc = DominantColors(clusters)
-                #for i in range(maxFrame):
+            #for i in range(maxFrame):
                     # Retrieve piture name
                     #frameName = "images/" + fileName.split(".")[0] + str(i) + ".jpg"
                 num_cores = multiprocessing.cpu_count()
-                colors = Parallel(n_jobs=num_cores-2)(delayed(dc.dominantColors)(self.videoFilename, i) for i in range(maxFrame))
+                colors = []
+                for i in range(maxFrame-1):
+                    colors.append(dc.dominantColors(self.videoFilename, i+1))
+
                 self.save_picture(colors, maxFrame, clusters, width, height)
 
             fe.purge()
             self.showImg()
         else:
-            tkMessageBox.showinfo("Info", "Please select a video first (file > open)")
+            tkinter.messagebox.showinfo("Info", "Please select a video first (file > open)")
             self.open_file()
 
     def save_picture(self, colors, maxFrame, clusters, width, height, path=""):
@@ -393,7 +393,7 @@ class Window(Frame):
 
 
 
-root = Tk()
+root = tkinter.Tk()
 #size of the window
 root.geometry("1000x700")
 
