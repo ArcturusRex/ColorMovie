@@ -370,8 +370,9 @@ class Window(tkinter.Frame):
                     #frameName = "images/" + fileName.split(".")[0] + str(i) + ".jpg"
                 num_cores = multiprocessing.cpu_count()
                 colors = []
-                for i in range(maxFrame-1):
-                    colors.append(dc.dominantColors(self.videoFilename, i+1))
+                num_cores = multiprocessing.cpu_count()
+                colors = Parallel(n_jobs=num_cores-1)(delayed(dc.dominantColors)
+                                                      (self.videoFilename, i) for i in range(maxFrame))
 
                 self.save_picture(colors, maxFrame, clusters, width, height)
 
