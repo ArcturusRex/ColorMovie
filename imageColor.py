@@ -243,6 +243,7 @@ class Window(tkinter.Frame):
         # command it runs on event is client_exit
         file.add_command(label="Open", command=self.open_file)
         file.add_command(label="Save as", command=self.save_as)
+        file.add_command(label="Extract faces", command=self.extract_faces)
         file.add_command(label="Exit", command=self.client_exit)
 
 
@@ -390,10 +391,32 @@ class Window(tkinter.Frame):
         fullChart = Chart(maxFrame,clusters, width, height)
         fullChart.addFrames(colors)
         self.plot = fullChart.displayChart()
-        self.plotName = self.videoFilename.split(".")[0] + ".png"
+        self.plotName = os.path.basename(self.videoFilename).split(".")[0]+"Shades.png"
+        print(self.plotName)
         plt.subplots_adjust(left=0, right=1, top=1, bottom=0)
         self.plot.savefig(self.plotName, transparent = True)
 
+    def extract_faces(self):
+        # multiple cascades: https://github.com/Itseez/opencv/tree/master/data/haarcascades
+        # https://github.com/Itseez/opencv/blob/master/data/haarcascades/haarcascade_frontalface_default.xml
+        face_cascade = cv2.CascadeClassifier(
+            'haarcascade_frontalface_default.xml')
+
+        folderName = "./images/"
+        for file in sorted(os.listdir(folderName)):
+            if file.endswith(".jpg"):
+                img = cv2.imread(folderName+file, cv2.IMREAD_COLOR)
+                gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+                faces = face_cascade.detectMultiScale(gray, 1.3, 5)
+                i = 0
+                for (x, y, w, h) in faces:
+                    print(file + "\t contains face(s)")
+                    roi_color = img[y:y+h, x:x+w]
+                    # cv2.rectangle(img,(x,y),(x+w,y+h),(255,0,0),2)
+                    cv2.imwrite('face_' + file + str(i)+".png", roi_color)
+                    i += 1
+                # cv2.imshow('img',img)
+                cv2.destroyAllWindows()
 
 
 
