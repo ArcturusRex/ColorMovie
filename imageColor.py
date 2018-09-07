@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import cv2
 from sklearn.cluster import KMeans
@@ -27,7 +27,9 @@ class FrameExtractor:
         self.fileName = fileName
 
     def read(self):
+        
         cap = cv2.VideoCapture(self.fileName)
+        print("video : {}".format(self.fileName))
         if not cap.isOpened():
             print('Could not open {}'.format(self.fileName))
             return
@@ -47,12 +49,12 @@ class FrameExtractor:
             success,image = self.capture.read()
             if success == True:
                 print("Frame number {}".format(int(count * framePeriod)))
-                frameName = "images/" + self.fileName.split(".")[0] + str(count) + ".jpg"
+                frameName = "images/" + os.path.basename(self.fileName).split(".")[0] + str(count) + ".jpg"
                 cv2.imwrite(frameName, image)     # save frame as JPEG file
                 count += 1
             print('Read a new frame: {}'.format(success))
 
-        return count-1
+        return count
 
     def purge(self):
         dirPath = "images"
@@ -130,7 +132,7 @@ class DominantColors:
         self.CLUSTERS = clusters
 
     def dominantColors(self, imageName, imageIndex):
-        self.IMAGE = "images/" + imageName.split(".")[0] + str(imageIndex) + ".jpg"
+        self.IMAGE = "images/" + os.path.basename(imageName).split(".")[0] + str(imageIndex) + ".jpg"
         print(self.IMAGE)
         #read image
         img = cv2.imread(self.IMAGE)
@@ -206,6 +208,7 @@ class Window(tkinter.Frame):
     load = None
     defaultImageWidth = None
     defaultImageHeight = None
+    frameExtractor = None
 
     def __init__(self, master=None):
         tkinter.Frame.__init__(self, master)
@@ -300,12 +303,17 @@ class Window(tkinter.Frame):
         tkinter.Label(self.master, text="Video path : {}".format(self.videoFilename)).grid(row=5, column=0)
 
     def client_exit(self):
+        # Delete all pictures in images folder
+        if (self.frameExtractor != None):
+            self.frameExtractor.purge()
         root.quit()
-        exit()
 
     def open_file(self):
         videoFilePath = tkinter.filedialog.askopenfilename(initialdir = "/home/uidq6974/Dev/Python/openCV/imageColor",title = "Select video file",filetypes = (("avi files","*.avi"),("all files","*.*")))
-        self.videoFilename = os.path.basename(videoFilePath)
+        self.videoFilename = os.path.realpath(videoFilePath)
+        print(self.videoFilename)
+        # Instanciate frame extractor with video name
+        self.frameExtractor = FrameExtractor(self.videoFilename)
         self.isVideoSelected = True
 
     def save_as(self):
@@ -359,15 +367,11 @@ class Window(tkinter.Frame):
                 os.makedirs("images")
 
             print(self.videoFilename)
-            fe = FrameExtractor(self.videoFilename)
-            fe.read()
-            maxFrame = fe.getFrames(frames)
+            self.frameExtractor.read()
+            maxFrame = self.frameExtractor.getFrames(frames)
 
             if maxFrame > 0:
                 dc = DominantColors(clusters)
-            #for i in range(maxFrame):
-                    # Retrieve piture name
-                    #frameName = "images/" + fileName.split(".")[0] + str(i) + ".jpg"
                 num_cores = multiprocessing.cpu_count()
                 colors = []
                 num_cores = multiprocessing.cpu_count()
@@ -376,7 +380,6 @@ class Window(tkinter.Frame):
 
                 self.save_picture(colors, maxFrame, clusters, width, height)
 
-            fe.purge()
             self.showImg()
         else:
             tkinter.messagebox.showinfo("Info", "Please select a video first (file > open)")
