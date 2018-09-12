@@ -1,7 +1,9 @@
 .vscode/
 images/
+output/
 *.png
 *.jpg
 *.avi
 *.mp4
 *.mkv
+.tags

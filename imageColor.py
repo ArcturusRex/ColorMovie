@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 
 import cv2
 from sklearn.cluster import KMeans
@@ -27,7 +27,7 @@ class FrameExtractor:
         self.fileName = fileName
 
     def read(self):
-        
+
         cap = cv2.VideoCapture(self.fileName)
         print("video : {}".format(self.fileName))
         if not cap.isOpened():
@@ -111,10 +111,10 @@ class Chart:
                 start = end
             self.CHART_INDEX += 1
 
-    def displayChart(self):
+    def createChart(self):
         # Turn interactive plotting off
         plt.ioff()
-        plt.figure()
+        plt.figure(figsize=(self.IMAGE_WIDTH/MY_DPI, self.IMAGE_HEIGHT/MY_DPI), dpi=MY_DPI)
         plt.axis("off")
         plt.imshow(self.CHART,aspect='auto')
         fig = plt.gcf()
@@ -197,6 +197,7 @@ class DominantColors:
 # GUI
 class Window(tkinter.Frame):
     videoFilename = None
+    videoFilePath = None
     filename = None
     clusters = None
     frames = None
@@ -263,45 +264,51 @@ class Window(tkinter.Frame):
 
         # grid config
         root.grid_columnconfigure(0, weight=1)
-        root.grid_columnconfigure(1, weight=1)
+        root.grid_columnconfigure(1, weight=3)
+        root.grid_columnconfigure(2, weight=1)
 
         # add parameter entry fields
         tkinter.Label(self.master, text="Frames").grid(row=0)
         tkinter.Label(self.master, text="Clusters").grid(row=1)
         tkinter.Label(self.master, text="Image width (px)").grid(row=2)
         tkinter.Label(self.master, text="Image height (px)").grid(row=3)
+        tkinter.Label(self.master, text="Video file").grid(row=4)
 
         self.frames = tkinter.StringVar()
         self.clusters = tkinter.StringVar()
         self.imageWidth = tkinter.StringVar()
         self.imageHeight = tkinter.StringVar()
+        self.videoFilePath = tkinter.StringVar()
 
         frames = tkinter.Entry(self.master, textvariable=self.frames)
         clusters = tkinter.Entry(self.master, textvariable=self.clusters)
         imageWidth = tkinter.Entry(self.master, textvariable=self.imageWidth)
         imageHeight = tkinter.Entry(self.master, textvariable=self.imageHeight)
+        filePath = tkinter.Entry(self.master, textvariable=self.videoFilePath)
 
-        frames.grid(row=0, column=1)
-        clusters.grid(row=1, column=1)
-        imageWidth.grid(row=2, column=1)
-        imageHeight.grid(row=3, column=1)
+        frames.grid(row=0, column=1, sticky='we')
+        clusters.grid(row=1, column=1, sticky='we')
+        imageWidth.grid(row=2, column=1, sticky='we')
+        imageHeight.grid(row=3, column=1, sticky='we')
+        filePath.grid(row=4, column=1, sticky='we')
 
-        # creating a button instance and placing it
-        tkinter.Button(self.master, text="Compute!",command=self.video_computation).grid(row=4, columnspan=2)
+        # add buttons
+        tkinter.Button(self.master, text="Select file",command=self.open_file).grid(row=4, column=2)
+        tkinter.Button(self.master, text="Compute!",command=self.video_computation).grid(row=5, columnspan=3)
 
 
     def showImg(self):
-        self.load = PIL.Image.open(self.plotName)
+        self.load = PIL.Image.open("output/" + self.plotName)
         render = PIL.ImageTk.PhotoImage(self.load)
 
         # labels can be text or images
         img = tkinter.Label(self.master, image=render)
         img.image = render
-        img.grid(row=5, columnspan=2)
+        img.grid(row=5, columnspan=3)
 
 
     def showText(self):
-        tkinter.Label(self.master, text="Video path : {}".format(self.videoFilename)).grid(row=5, column=0)
+        tkinter.Label(self.master, text="Video path : {}".format(self.videoFilename)).grid(row=6, column=0)
 
     def client_exit(self):
         # Delete all pictures in images folder
@@ -310,12 +317,12 @@ class Window(tkinter.Frame):
         root.quit()
 
     def open_file(self):
-        videoFilePath = tkinter.filedialog.askopenfilename(initialdir = "/home/uidq6974/Dev/Python/openCV/imageColor",title = "Select video file",filetypes = (("avi files","*.avi"),("all files","*.*")))
-        self.videoFilename = os.path.realpath(videoFilePath)
-        print(self.videoFilename)
+        self.videoFilePath.set(tkinter.filedialog.askopenfilename(initialdir = "/home/uidq6974/Dev/Python/openCV/imageColor",title = "Select video file",filetypes = (("avi files","*.avi"),("all files","*.*"))))
+        self.videoFilename = os.path.realpath(str(self.videoFilePath.get()))
         # Instanciate frame extractor with video name
         self.frameExtractor = FrameExtractor(self.videoFilename)
         self.isVideoSelected = True
+
 
     def save_as(self):
 
@@ -367,6 +374,11 @@ class Window(tkinter.Frame):
             if not os.path.exists("images"):
                 os.makedirs("images")
 
+            # create output folder
+            if not os.path.exists("output/faces"):
+                os.makedirs("output/faces")
+
+
             print(self.videoFilename)
             self.frameExtractor.read()
             maxFrame = self.frameExtractor.getFrames(frames)
@@ -390,11 +402,11 @@ class Window(tkinter.Frame):
 
         fullChart = Chart(maxFrame,clusters, width, height)
         fullChart.addFrames(colors)
-        self.plot = fullChart.displayChart()
-        self.plotName = os.path.basename(self.videoFilename).split(".")[0]+"Shades.png"
-        print(self.plotName)
+        self.plot = fullChart.createChart()
+        self.plotName = os.path.basename(self.videoFilename).split(".")[0]+"_shade.png"
+        print("Output file : {}".format("output/" + self.plotName))
         plt.subplots_adjust(left=0, right=1, top=1, bottom=0)
-        self.plot.savefig(self.plotName, transparent = True)
+        self.plot.savefig("output/" + self.plotName, transparent = True)
 
     def extract_faces(self):
         # multiple cascades: https://github.com/Itseez/opencv/tree/master/data/haarcascades
@@ -413,7 +425,7 @@ class Window(tkinter.Frame):
                     print(file + "\t contains face(s)")
                     roi_color = img[y:y+h, x:x+w]
                     # cv2.rectangle(img,(x,y),(x+w,y+h),(255,0,0),2)
-                    cv2.imwrite('face_' + file + str(i)+".png", roi_color)
+                    cv2.imwrite('output/faces/face_' + file + str(i)+".png", roi_color)
                     i += 1
                 # cv2.imshow('img',img)
                 cv2.destroyAllWindows()
