@@ -15,6 +15,7 @@ import tkinter
 import tkinter.messagebox
 import tkinter.filedialog
 import logging
+import faceDetection
 
 # Hard-coded DPI for my monitor
 MY_DPI = 94
@@ -481,9 +482,6 @@ class Window(tkinter.Frame):
         # create output folder
         if not os.path.exists("output/videos"):
                 os.makedirs("output/videos")
-        faceDetection = FaceDetection()
-        faceDetection.compute(self.videoFilename)   
-
 # initialize log
 logging.basicConfig(format='%(asctime)s-%(levelname)s: %(message)s',datefmt='%d/%m/%Y %H:%M:%S')
 logging.getLogger().setLevel(logging.INFO)
@@ -497,3 +495,6 @@ root.geometry("1000x700")
 root.iconbitmap(r'MovieColor.ico')
 app = Window(root)
 root.mainloop()
+        detection = faceDetection.FaceDetection()
+        detection.compute(self.videoFilename)   
+
