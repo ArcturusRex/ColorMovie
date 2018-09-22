@@ -268,7 +268,7 @@ def main():
     app = Window()
     app.geometry("1000x700")
     # GUI icon
-    app.iconbitmap(r'MovieColor.ico')
+    app.iconbitmap(r'resources/colorMovie.ico')
     app.mainloop()
 
 if __name__ == '__main__':
