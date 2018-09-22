@@ -14,6 +14,7 @@ import PIL.Image, PIL.ImageTk
 import tkinter
 import tkinter.messagebox
 import tkinter.filedialog
+import logging
 
 # Hard-coded DPI for my monitor
 MY_DPI = 94
@@ -29,18 +30,18 @@ class FrameExtractor:
     def read(self):
 
         cap = cv2.VideoCapture(self.fileName)
-        print("video : {}".format(self.fileName))
+        logging.info("video : {}".format(self.fileName))
         if not cap.isOpened():
-            print('Could not open {}'.format(self.fileName))
+            logging.error('Could not open {}'.format(self.fileName))
             return
         self.capture = cap
         self.totalFrames = int(self.capture.get(cv2.CAP_PROP_FRAME_COUNT))
-        print("======> {} FRAMES".format(self.totalFrames))
+        logging.info("{} FRAMES".format(self.totalFrames))
 
     def getFrames(self, divisions):
         # Will extract divisions equally reparted frames from video (format : jpg)
         framePeriod = self.totalFrames / divisions
-        print("Select one frame every {}".format(int(framePeriod)))
+        logging.info("Select one frame every {}".format(int(framePeriod)))
         # Trial
         success,image = self.capture.read()
         count = 0
@@ -48,11 +49,10 @@ class FrameExtractor:
             self.capture.set(cv2.CAP_PROP_POS_FRAMES, int(count * framePeriod))
             success,image = self.capture.read()
             if success == True:
-                print("Frame number {}".format(int(count * framePeriod)))
+                logging.info("Frame number {}".format(int(count * framePeriod)))
                 frameName = "images/" + os.path.basename(self.fileName).split(".")[0] + "_" + str(count) + ".jpg"
                 cv2.imwrite(frameName, image)     # save frame as JPEG file
                 count += 1
-            print('Read a new frame: {}'.format(success))
 
         return count
 
@@ -97,7 +97,7 @@ class Chart:
 
         # Store all data for the map
         self.RGB_MAP = np.zeros((self.TOTAL_FRAMES, self.CLUSTER, 4), np.uint8)
-        print("Frame width : {} px".format(self.FRAME_WIDTH))
+        logging.info("Frame width : {} px".format(self.FRAME_WIDTH))
 
     def addFrames(self, fullColorTable):
         self.RGB_MAP = fullColorTable
@@ -171,10 +171,6 @@ class DominantColors:
         colors = sorted(colors, key=lambda colors: colors[0]+colors[1]+colors[2])
         hist = [ hist[i] for i in finalDict.keys()]
 
-        #print("frame {}/{}".format(self.CHART_INDEX+1, self.TOTAL_FRAMES))
-
-        #creating color rectangles
-        #start = 0
         colorTable = []
         for i in range(self.CLUSTERS):
             singleTable = np.zeros((4))
@@ -184,14 +180,6 @@ class DominantColors:
             singleTable[3] = hist[i]
             # Getting rgb values
             colorTable.append(singleTable)
-
-            #print(colorTable)
-
-            # Add colors to chart
-
-            #using cv2.rectangle to plot colors
-            #cv2.rectangle(self.CHART, (self.CHART_INDEX * self.FRAME_WIDTH, int(start)), (self.FRAME_WIDTH * (self.CHART_INDEX + 1), int(end)), (r,g,b), -1)
-            #start = end
         return colorTable
 
 # Face detection module : frames detected faces in video output
@@ -208,7 +196,7 @@ class FaceDetection:
         # Read through input video
         cap = cv2.VideoCapture(self.FILENAME)
         if not cap.isOpened():
-            print('Could not open {}'.format(self.FILENAME))
+            logging.error('Could not open {}'.format(self.FILENAME))
             return
         self.CAPTURE = cap
         # read initial frame parameters
@@ -221,7 +209,7 @@ class FaceDetection:
           # set up output file
         fourcc = cv2.VideoWriter_fourcc(*fourccEncoding)
         outputName = "output/videos/" + output + "." + extension
-        print("Output file : {} ({})".format(outputName, fourccEncoding))
+        logging.info("Output file : {} ({})".format(outputName, fourccEncoding))
         self.OUTPUT = cv2.VideoWriter(outputName,fourcc, self.FPS, (self.IMWIDTH, self.IMHEIGHT))
 
     def compute(self, filename):
@@ -246,8 +234,8 @@ class FaceDetection:
                     cv2.rectangle(frame,(x,y),(x+w,y+h),(255,0,0),2)
                 self.OUTPUT.write(frame)
                 if frame_number % 100 == 0:
-                    print("frame {}/{}".format(frame_number, self.TOTALFRAMES))
-        print("Done !")
+                    logging.info("frame {}/{}".format(frame_number, self.TOTALFRAMES))
+        logging.info("Done !")
         self.CAPTURE.release()
         self.OUTPUT.release()
 
@@ -362,7 +350,7 @@ class Window(tkinter.Frame):
         # labels can be text or images
         img = tkinter.Label(self.master, image=render)
         img.image = render
-        img.grid(row=5, columnspan=3)
+        img.grid(row=6, columnspan=3)
 
 
     def showText(self):
@@ -393,7 +381,7 @@ class Window(tkinter.Frame):
                 return
             self.load.save(newImage, extension)
             newImage.close()
-            print("Image successfully saved to : {}".format(newImage.name))
+            logging.info("Image saved to : {}".format(newImage.name))
         else:
             tkinter.messagebox.showinfo("Info", "Image {} has not been generated yet!".format(self.plotName))
             return
@@ -436,7 +424,7 @@ class Window(tkinter.Frame):
             if not os.path.exists("output/shades"):
                 os.makedirs("output/shades")
 
-            print(self.videoFilename)
+            logging.info(self.videoFilename)
             self.frameExtractor.read()
             maxFrame = self.frameExtractor.getFrames(frames)
 
@@ -461,7 +449,7 @@ class Window(tkinter.Frame):
         fullChart.addFrames(colors)
         self.plot = fullChart.createChart()
         self.plotName = os.path.basename(self.videoFilename).split(".")[0]+"_shade.png"
-        print("Output file : {}".format("output/shades/" + self.plotName))
+        logging.info("Output file : {}".format("output/shades/" + self.plotName))
         plt.subplots_adjust(left=0, right=1, top=1, bottom=0)
         self.plot.savefig("output/shades/" + self.plotName, transparent = True)
 
@@ -483,7 +471,7 @@ class Window(tkinter.Frame):
                 faces = face_cascade.detectMultiScale(gray, 1.3, 5)
                 i = 0
                 for (x, y, w, h) in faces:
-                    print(file + "\t contains face(s)")
+                    logging.info(file + "\t contains face(s)")
                     roi_color = img[y:y+h, x:x+w]
                     # cv2.rectangle(img,(x,y),(x+w,y+h),(255,0,0),2)
                     cv2.imwrite('output/faces/face_' + file + "_" + str(i)+".png", roi_color)
@@ -499,7 +487,11 @@ class Window(tkinter.Frame):
         faceDetection.compute(self.videoFilename)   
 
 
+#initialize log
+logging.basicConfig(format='%(asctime)s-%(levelname)s: %(message)s',datefmt='%d/%m/%Y %H:%M:%S')
+logging.getLogger().setLevel(logging.INFO)
 
+#initialize GUI
 root = tkinter.Tk()
 #size of the window
 root.geometry("1000x700")
