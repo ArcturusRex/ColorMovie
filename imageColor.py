@@ -49,7 +49,7 @@ class FrameExtractor:
             success,image = self.capture.read()
             if success == True:
                 print("Frame number {}".format(int(count * framePeriod)))
-                frameName = "images/" + os.path.basename(self.fileName).split(".")[0] + str(count) + ".jpg"
+                frameName = "images/" + os.path.basename(self.fileName).split(".")[0] + "_" + str(count) + ".jpg"
                 cv2.imwrite(frameName, image)     # save frame as JPEG file
                 count += 1
             print('Read a new frame: {}'.format(success))
@@ -132,7 +132,7 @@ class DominantColors:
         self.CLUSTERS = clusters
 
     def dominantColors(self, imageName, imageIndex):
-        self.IMAGE = "images/" + os.path.basename(imageName).split(".")[0] + str(imageIndex) + ".jpg"
+        self.IMAGE = "images/" + os.path.basename(imageName).split(".")[0] + "_" + str(imageIndex) + ".jpg"
         print(self.IMAGE)
         #read image
         img = cv2.imread(self.IMAGE)
@@ -356,7 +356,7 @@ class Window(tkinter.Frame):
 
 
     def showImg(self):
-        self.load = PIL.Image.open("output/" + self.plotName)
+        self.load = PIL.Image.open("output/shades/" + self.plotName)
         render = PIL.ImageTk.PhotoImage(self.load)
 
         # labels can be text or images
@@ -433,8 +433,8 @@ class Window(tkinter.Frame):
                 os.makedirs("images")
 
             # create output folder
-            if not os.path.exists("output/faces"):
-                os.makedirs("output/faces")
+            if not os.path.exists("output/shades"):
+                os.makedirs("output/shades")
 
             print(self.videoFilename)
             self.frameExtractor.read()
@@ -461,11 +461,15 @@ class Window(tkinter.Frame):
         fullChart.addFrames(colors)
         self.plot = fullChart.createChart()
         self.plotName = os.path.basename(self.videoFilename).split(".")[0]+"_shade.png"
-        print("Output file : {}".format("output/" + self.plotName))
+        print("Output file : {}".format("output/shades/" + self.plotName))
         plt.subplots_adjust(left=0, right=1, top=1, bottom=0)
-        self.plot.savefig("output/" + self.plotName, transparent = True)
+        self.plot.savefig("output/shades/" + self.plotName, transparent = True)
 
     def extract_faces(self):
+        # create output folder
+        if not os.path.exists("output/faces"):
+            os.makedirs("output/faces")
+
         # multiple cascades: https://github.com/Itseez/opencv/tree/master/data/haarcascades
         # https://github.com/Itseez/opencv/blob/master/data/haarcascades/haarcascade_frontalface_default.xml
         face_cascade = cv2.CascadeClassifier(
@@ -482,7 +486,7 @@ class Window(tkinter.Frame):
                     print(file + "\t contains face(s)")
                     roi_color = img[y:y+h, x:x+w]
                     # cv2.rectangle(img,(x,y),(x+w,y+h),(255,0,0),2)
-                    cv2.imwrite('output/faces/face_' + file + str(i)+".png", roi_color)
+                    cv2.imwrite('output/faces/face_' + file + "_" + str(i)+".png", roi_color)
                     i += 1
                 # cv2.imshow('img',img)
                 cv2.destroyAllWindows()
