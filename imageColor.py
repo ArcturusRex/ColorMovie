@@ -181,65 +181,8 @@ class DominantColors:
             colorTable.append(singleTable)
         return colorTable
 
-# Face detection module : frames detected faces in video output
-class FaceDetection:
-    FILENAME = None
-    IMWIDTH = None
-    IMHEIGHT = None
-    FPS = None
-    TOTALFRAMES = None
-    CAPTURE = None
-    OUTPUT = None
-
-    def set_input(self):
-        # Read through input video
-        cap = cv2.VideoCapture(self.FILENAME)
-        if not cap.isOpened():
-            logging.error('Could not open {}'.format(self.FILENAME))
-            return
-        self.CAPTURE = cap
-        # read initial frame parameters
-        self.IMWIDTH = int(self.CAPTURE.get(cv2.CAP_PROP_FRAME_WIDTH))
-        self.IMHEIGHT = int(self.CAPTURE.get(cv2.CAP_PROP_FRAME_HEIGHT))
-        self.FPS = self.CAPTURE.get(cv2.CAP_PROP_FPS)
-        self.TOTALFRAMES = int(self.CAPTURE.get(cv2.CAP_PROP_FRAME_COUNT))
-
-    def set_output(self, output = "Output", extension = "avi", fourccEncoding = "XVID"):
-          # set up output file
-        fourcc = cv2.VideoWriter_fourcc(*fourccEncoding)
-        outputName = "output/videos/" + output + "." + extension
-        logging.info("Output file : {} ({})".format(outputName, fourccEncoding))
-        self.OUTPUT = cv2.VideoWriter(outputName,fourcc, self.FPS, (self.IMWIDTH, self.IMHEIGHT))
-
-    def compute(self, filename):
-        # multiple cascades: https://github.com/Itseez/opencv/tree/master/data/haarcascades
-        # https://github.com/Itseez/opencv/blob/master/data/haarcascades/haarcascade_frontalface_default.xml
-        face_cascade = cv2.CascadeClassifier(
-            'haarcascade_frontalface_default.xml')
-        self.FILENAME = filename
-        self.set_input()
-        self.set_output("test", "avi", "XVID")
-        frame_number = -1
-        success = True
-
-        while success:
-            # read first frame
-            success,frame = self.CAPTURE.read()
-            frame_number += 1
-            if success == True:
-                gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-                faces = face_cascade.detectMultiScale(gray, 1.3, 5)
-                for (x, y, w, h) in faces:
-                    cv2.rectangle(frame,(x,y),(x+w,y+h),(255,0,0),2)
-                self.OUTPUT.write(frame)
-                if frame_number % 100 == 0:
-                    logging.info("frame {}/{}".format(frame_number, self.TOTALFRAMES))
-        logging.info("Done !")
-        self.CAPTURE.release()
-        self.OUTPUT.release()
-
 # GUI
-class Window(tkinter.Frame):
+class Window(tkinter.Tk):
     videoFilename = None
     videoFilePath = None
     filename = None
@@ -255,9 +198,9 @@ class Window(tkinter.Frame):
     defaultImageHeight = None
     frameExtractor = None
 
-    def __init__(self, master=None):
-        tkinter.Frame.__init__(self, master)
-        self.master = master
+    def __init__(self, *args, **kwargs):
+        tkinter.Tk.__init__(self, *args, **kwargs)
+        tkinter.Frame(self)
         self.init_window()
         self.isVideoSelected = False
         self.defaultFrames = 10
@@ -272,14 +215,14 @@ class Window(tkinter.Frame):
     def init_window(self):
 
         # changing the title of our master widget
-        self.master.title("Color Movie")
+        self.title("Color Movie")
 
         # Overriding cross behavior
-        root.protocol('WM_DELETE_WINDOW', self.client_exit)
+        self.protocol('WM_DELETE_WINDOW', self.client_exit)
 
         # creating a menu instance
         menuBar = tkinter.Menu(self.master)
-        self.master.config(menu=menuBar)
+        self.config(menu=menuBar)
 
         # create the file object)
         file = tkinter.Menu(menuBar)
@@ -308,9 +251,9 @@ class Window(tkinter.Frame):
         menuBar.add_cascade(label="Edit", menu=edit)
 
         # grid config
-        root.grid_columnconfigure(0, weight=1)
-        root.grid_columnconfigure(1, weight=3)
-        root.grid_columnconfigure(2, weight=1)
+        self.grid_columnconfigure(0, weight=1)
+        self.grid_columnconfigure(1, weight=3)
+        self.grid_columnconfigure(2, weight=1)
 
         # add parameter entry fields
         tkinter.Label(self.master, text="Frames").grid(row=0)
@@ -359,7 +302,7 @@ class Window(tkinter.Frame):
         # Delete all pictures in images folder
         if (self.frameExtractor != None):
             self.frameExtractor.purge()
-        root.quit()
+        self.quit()
 
     def open_file(self):
         self.videoFilePath.set(tkinter.filedialog.askopenfilename(initialdir = "/home/uidq6974/Dev/Python/openCV/imageColor",title = "Select video file",filetypes = (("avi files","*.avi"),("all files","*.*"))))
@@ -482,19 +425,19 @@ class Window(tkinter.Frame):
         # create output folder
         if not os.path.exists("output/videos"):
                 os.makedirs("output/videos")
-# initialize log
-logging.basicConfig(format='%(asctime)s-%(levelname)s: %(message)s',datefmt='%d/%m/%Y %H:%M:%S')
-logging.getLogger().setLevel(logging.INFO)
-
-# initialize GUI
-
-root = tkinter.Tk()
-# size of the window
-root.geometry("1000x700")
-# GUI icon
-root.iconbitmap(r'MovieColor.ico')
-app = Window(root)
-root.mainloop()
         detection = faceDetection.FaceDetection()
         detection.compute(self.videoFilename)   
 
+def main():
+    # initialize log
+    logging.basicConfig(format='%(asctime)s-%(levelname)s: %(message)s',datefmt='%d/%m/%Y %H:%M:%S')
+    logging.getLogger().setLevel(logging.INFO)
+
+    app = Window()
+    app.geometry("1000x700")
+    # GUI icon
+    app.iconbitmap(r'MovieColor.ico')
+    app.mainloop()
+
+if __name__ == '__main__':
+    main()
