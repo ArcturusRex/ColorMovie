@@ -97,7 +97,6 @@ class Chart:
 
         # Store all data for the map
         self.RGB_MAP = np.zeros((self.TOTAL_FRAMES, self.CLUSTER, 4), np.uint8)
-        logging.info("Frame width : {} px".format(self.FRAME_WIDTH))
 
     def addFrames(self, fullColorTable):
         self.RGB_MAP = fullColorTable
@@ -133,7 +132,6 @@ class DominantColors:
 
     def dominantColors(self, imageName, imageIndex):
         self.IMAGE = "images/" + os.path.basename(imageName).split(".")[0] + "_" + str(imageIndex) + ".jpg"
-        print(self.IMAGE)
         #read image
         img = cv2.imread(self.IMAGE)
         #convert to rgb from bgr
@@ -273,7 +271,7 @@ class Window(tkinter.Frame):
     def init_window(self):
 
         # changing the title of our master widget
-        self.master.title("GUI")
+        self.master.title("Color Movie")
 
         # Overriding cross behavior
         root.protocol('WM_DELETE_WINDOW', self.client_exit)
@@ -434,7 +432,7 @@ class Window(tkinter.Frame):
                 colors = []
                 num_cores = multiprocessing.cpu_count()
                 colors = Parallel(n_jobs=num_cores-1)(delayed(dc.dominantColors)
-                                                      (self.videoFilename, i) for i in range(maxFrame))
+                                                      (self.videoFilename, i) for i in tqdm(range(maxFrame)))
 
                 self.save_picture(colors, maxFrame, clusters, width, height)
 
@@ -486,16 +484,16 @@ class Window(tkinter.Frame):
         faceDetection = FaceDetection()
         faceDetection.compute(self.videoFilename)   
 
-
-#initialize log
+# initialize log
 logging.basicConfig(format='%(asctime)s-%(levelname)s: %(message)s',datefmt='%d/%m/%Y %H:%M:%S')
 logging.getLogger().setLevel(logging.INFO)
 
-#initialize GUI
-root = tkinter.Tk()
-#size of the window
-root.geometry("1000x700")
+# initialize GUI
 
+root = tkinter.Tk()
+# size of the window
+root.geometry("1000x700")
+# GUI icon
+root.iconbitmap(r'MovieColor.ico')
 app = Window(root)
-#app.setFilename(videoFilename)
 root.mainloop()
