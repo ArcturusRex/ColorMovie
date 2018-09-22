@@ -1,6 +1,8 @@
 .vscode/
 images/
+input/
 output/
+archives/
 *.png
 *.jpg
 *.avi
